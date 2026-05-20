@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONEV Rijal YNBDG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes scan { 0% { top: 5%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 95%; opacity: 0; } }
+        .animate-scan { animation: scan 2.5s ease-in-out infinite; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 pb-12 min-h-screen">
+
+<header class="bg-indigo-600 text-white shadow-md relative z-10">
+    <div class="max-w-5xl mx-auto px-4 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <i data-lucide="shield" class="text-indigo-200"></i> MONEV Rijal YNBDG
+        </h1>
+        <div class="flex items-center gap-3">
+            <div id="cloud-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border bg-yellow-500/20 border-yellow-400 text-yellow-100">
+                <i data-lucide="loader" id="cloud-icon" class="w-3.5 h-3.5 animate-spin"></i>
+                <span id="cloud-text">Connecting...</span>
+            </div>
+            <div class="bg-indigo-800/60 px-4 py-1.5 rounded-full text-sm font-medium border border-indigo-500 shadow-inner">Q1 2026</div>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6">
+    <!-- NAV TABS -->
+    <div class="flex space-x-2 bg-white p-1.5 rounded-xl shadow-sm mb-6 overflow-x-auto border border-slate-100 no-scrollbar">
+        <button id="tab-scanner"     class="tab-btn active-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1">
+            <i data-lucide="qr-code" class="w-4 h-4"></i> Scanner
+        </button>
+        <button id="tab-leaderboard" class="tab-btn inactive-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1">
+            <i data-lucide="trophy" class="w-4 h-4"></i> Leaderboard
+        </button>
+        <button id="tab-history"     class="tab-btn inactive-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1">
+            <i data-lucide="history" class="w-4 h-4"></i> Riwayat
+        </button>
+        <button id="tab-admin"       class="tab-btn inactive-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1">
+            <i data-lucide="settings" class="w-4 h-4"></i> Admin
+        </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 min-h-[400px]">
+
+        <!-- VIEW: SCANNER -->
+        <div id="view-scanner" class="max-w-2xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Catat Kehadiran</h2>
+                <p class="text-slate-500 mt-1 text-sm">Data akan langsung tersimpan ke Cloud Database.</p>
+            </div>
+            <div class="space-y-6">
+                <div class="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100">
+                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs">1</span>
+                        Pilih Jenis Kegiatan
+                    </label>
+                    <div class="relative">
+                        <select id="activity-select" class="w-full p-3 md:p-4 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none appearance-none text-slate-700 font-medium cursor-pointer shadow-sm">
+                            <option value="" disabled selected>-- Klik untuk Pilih Kegiatan --</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs">2</span>
+                            Identifikasi Member
+                        </label>
+                        <div class="flex bg-slate-200 p-1 rounded-lg">
+                            <button id="btn-mode-kamera"   class="px-3 py-1 text-xs font-medium rounded-md transition-all text-slate-500 hover:text-slate-700">Kamera</button>
+                            <button id="btn-mode-simulasi" class="px-3 py-1 text-xs font-medium rounded-md transition-all bg-white shadow-sm text-slate-800">Manual</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[220px] border-2 border-slate-800 shadow-inner">
+                        <div id="mode-kamera-ui" class="hidden text-center w-full relative z-10">
+                            <i data-lucide="camera" class="w-12 h-12 text-slate-700 mx-auto mb-3"></i>
+                            <p class="text-slate-400 text-sm font-medium">Akses Kamera Diperlukan</p>
+                            <p class="text-slate-600 text-xs mt-1">(Fitur sedang dalam pengembangan)</p>
+                        </div>
+                        <div id="mode-simulasi-ui" class="w-full max-w-sm text-center relative z-10">
+                            <i data-lucide="qr-code" class="w-12 h-12 text-slate-600 mx-auto mb-4"></i>
+                            <p class="text-slate-300 text-sm mb-4">Pilih anggota dari daftar untuk simulasi scan barcode.</p>
+                            <div class="relative text-left">
+                                <select id="member-select" class="w-full p-3 bg-slate-800 text-white border border-slate-600 rounded-xl outline-none text-sm appearance-none cursor-pointer focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                    <option value="" disabled selected>-- Pilih Identitas Member --</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button id="btn-submit" class="w-full py-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-[0.98]">
+                        <i data-lucide="check-circle" id="icon-submit-idle" class="w-5 h-5"></i>
+                        <div id="icon-submit-loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin hidden"></div>
+                        <span id="text-submit">Simpan Presensi</span>
+                    </button>
+                    <div id="notification-area" class="mt-4 p-4 rounded-xl items-center gap-3 hidden">
+                        <i data-lucide="check-circle" id="notif-icon-success" class="hidden w-5 h-5 flex-shrink-0 text-green-500"></i>
+                        <i data-lucide="alert-circle" id="notif-icon-error" class="hidden w-5 h-5 flex-shrink-0 text-red-500"></i>
+                        <span id="notif-text" class="font-medium text-sm md:text-base"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: LEADERBOARD -->
+        <div id="view-leaderboard" class="hidden">
+            <h2 class="text-2xl font-bold mb-6">Leaderboard Real-Time</h2>
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left min-w-[600px]">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="p-4 text-center font-semibold text-slate-500 w-16">Rank</th>
+                            <th class="p-4 font-semibold text-slate-500">Nama Anggota</th>
+                            <th class="p-4 font-semibold text-slate-500">Status</th>
+                            <th class="p-4 font-semibold text-slate-500">Progres Q1</th>
+                            <th class="p-4 text-right font-semibold text-slate-500">Poin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr><td colspan="5" class="p-8 text-center text-slate-400">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW: HISTORY -->
+        <div id="view-history" class="hidden">
+            <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800">Riwayat Cloud</h2>
+                <span id="history-count" class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200">Total: 0 Presensi</span>
+            </div>
+            <div id="history-body" class="space-y-3"></div>
+        </div>
+
+        <!-- VIEW: ADMIN -->
+        <div id="view-admin" class="hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Admin & Data Anggota</h2>
+                <p class="text-slate-500 mt-1">Kelola daftar anggota dari file Spreadsheet (CSV) atau hapus data.</p>
+            </div>
+
+            <!-- Firebase Status Info -->
+            <div id="firebase-warning" class="max-w-xl mx-auto mb-6 bg-amber-50 p-4 rounded-xl border border-amber-200 hidden">
+                <h4 class="text-sm font-bold text-amber-800 mb-1 flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i> Cloud Tidak Tersambung
+                </h4>
+                <p class="text-xs text-amber-700 leading-relaxed">
+                    Pastikan <strong>Anonymous Authentication</strong> sudah diaktifkan di Firebase Console → Authentication → Sign-in method. Data saat ini tersimpan di lokal browser sebagai fallback.
+                </p>
+            </div>
+
+            <div class="max-w-xl mx-auto bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-300 mb-6">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+                        <i data-lucide="file-up" class="w-8 h-8"></i>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="font-bold text-slate-700">Impor Database Anggota</h3>
+                        <p class="text-xs text-slate-500 mt-1">Otomatis membaca Divisi dan merapikan kolom dari CSV.</p>
+                    </div>
+                    <input type="file" id="csv-file" accept=".csv" class="hidden">
+                    <button id="btn-pick-csv" class="px-6 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold hover:bg-slate-100 shadow-sm transition-all">
+                        Pilih File CSV
+                    </button>
+                    <p id="file-name-display" class="text-xs font-mono text-indigo-600 italic"></p>
+                    <button id="btn-import" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold opacity-50 cursor-not-allowed" disabled>
+                        Upload ke Cloud
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-w-xl mx-auto bg-red-50 p-6 rounded-2xl border border-red-200">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                        <i data-lucide="trash-2" class="w-8 h-8"></i>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="font-bold text-red-700">Hapus Semua Data (Reset)</h3>
+                        <p class="text-xs text-red-500 mt-1">Gunakan untuk menghapus semua member dan riwayat saat pergantian kepengurusan. Tidak bisa dikembalikan.</p>
+                    </div>
+                    <button id="btn-clear" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all shadow-sm">
+                        Hapus Semua Data Sekarang
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 max-w-xl mx-auto bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h4 class="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4"></i> Info Update
+                </h4>
+                <p class="text-xs text-blue-700 leading-relaxed">
+                    Member dengan Posisi/Homebase "Non-divisi" atau "-" masuk target 6 poin. Selain itu dihitung sebagai Divisi (target 8 poin).
+                </p>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- =============================================
+     SCRIPT 1: UI LOGIC (Regular script, global scope)
+     ============================================= -->
+<script>
+    const ACTIVITIES = [
+        { id: 'act1', name: 'Narasumber', points: 9 },
+        { id: 'act2', name: 'Panitia KEY9 / YNID', points: 6 },
+        { id: 'act3', name: 'Panitia Event YNBDG / PJ Member Dev', points: 4 },
+        { id: 'act5', name: 'Peserta KEY9 / YNID', points: 3 },
+        { id: 'act6', name: 'Peserta Event YNBDG / PJ Sport / Member Dev', points: 2 },
+        { id: 'act9', name: 'Peserta Program Sport', points: 1 },
+    ];
+
+    var ALL_TABS = ['scanner', 'leaderboard', 'history', 'admin'];
+    var membersData = [];
+    var logsData = [];
+    var isProcessing = false;
+    var firebaseReady = false;
+    var dbRef = null;
+
+    // ---- TAB SWITCHING ----
+    function switchTab(tabName) {
+        ALL_TABS.forEach(function(t) {
+            var view = document.getElementById('view-' + t);
+            var tab  = document.getElementById('tab-' + t);
+            if (view) view.classList.add('hidden');
+            if (tab) {
+                tab.className = 'tab-btn inactive-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1';
+            }
+        });
+        var activeView = document.getElementById('view-' + tabName);
+        var activeTab  = document.getElementById('tab-' + tabName);
+        if (activeView) activeView.classList.remove('hidden');
+        if (activeTab) {
+            activeTab.className = 'tab-btn active-tab flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap flex-1';
+        }
+    }
+
+    // ---- SCANNER MODE ----
+    function setScannerMode(mode) {
+        var btnKamera   = document.getElementById('btn-mode-kamera');
+        var btnSimulasi = document.getElementById('btn-mode-simulasi');
+        var uiKamera    = document.getElementById('mode-kamera-ui');
+        var uiSimulasi  = document.getElementById('mode-simulasi-ui');
+        var btnSubmit   = document.getElementById('btn-submit');
+
+        if (mode === 'kamera') {
+            btnKamera.className   = 'px-3 py-1 text-xs font-medium rounded-md transition-all bg-white shadow-sm text-slate-800';
+            btnSimulasi.className = 'px-3 py-1 text-xs font-medium rounded-md transition-all text-slate-500 hover:text-slate-700';
+            uiKamera.classList.remove('hidden');
+            uiSimulasi.classList.add('hidden');
+        } else {
+            btnSimulasi.className = 'px-3 py-1 text-xs font-medium rounded-md transition-all bg-white shadow-sm text-slate-800';
+            btnKamera.className   = 'px-3 py-1 text-xs font-medium rounded-md transition-all text-slate-500 hover:text-slate-700';
+            uiSimulasi.classList.remove('hidden');
+            uiKamera.classList.add('hidden');
+        }
+    }
+
+    // ---- NOTIFICATION ----
+    function showNotif(type, message) {
+        var area    = document.getElementById('notification-area');
+        var iconOk  = document.getElementById('notif-icon-success');
+        var iconErr = document.getElementById('notif-icon-error');
+        var text    = document.getElementById('notif-text');
+
+        area.className = 'mt-4 p-4 rounded-xl flex items-center gap-3 ' +
+            (type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-700 border border-red-200');
+        text.innerText = message;
+        iconOk.classList.toggle('hidden',  type !== 'success');
+        iconErr.classList.toggle('hidden', type !== 'error');
+        lucide.createIcons();
+
+        setTimeout(function() {
+            area.classList.add('hidden');
+        }, 4500);
+    }
+
+    // ---- CLOUD STATUS ----
+    function updateCloudStatus(status) {
+        var container = document.getElementById('cloud-status');
+        var text      = document.getElementById('cloud-text');
+        var warning   = document.getElementById('firebase-warning');
+
+        if (status === 'connected') {
+            container.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border bg-green-500/20 border-green-400 text-green-100';
+            text.innerText = 'Tersinkronisasi';
+            if (warning) warning.classList.add('hidden');
+        } else if (status === 'error') {
+            container.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border bg-red-500/20 border-red-400 text-red-100';
+            text.innerText = 'Mode Lokal';
+            if (warning) warning.classList.remove('hidden');
+        } else {
+            container.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border bg-yellow-500/20 border-yellow-400 text-yellow-100';
+            text.innerText = 'Connecting...';
+        }
+        lucide.createIcons();
+    }
+
+    // ---- RENDER MEMBERS ----
+    function renderMembers() {
+        var select = document.getElementById('member-select');
+        if (!select) return;
+        var oldVal = select.value;
+        select.innerHTML = '<option value="" disabled selected>-- Pilih Identitas Member --</option>';
+        var sorted = membersData.slice().sort(function(a, b) { return a.name.localeCompare(b.name); });
+        sorted.forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name + ' (' + m.status + ')';
+            select.appendChild(opt);
+        });
+        if (oldVal) select.value = oldVal;
+    }
+
+    // ---- RENDER LEADERBOARD ----
+    function renderLeaderboard() {
+        var body = document.getElementById('leaderboard-body');
+        if (!body) return;
+        body.innerHTML = '';
+        if (membersData.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data anggota. Impor CSV di tab Admin.</td></tr>';
+            return;
+        }
+        var sorted = membersData.slice().sort(function(a, b) { return b.points - a.points; });
+        sorted.forEach(function(m, i) {
+            var target = m.status === 'Divisi' ? 8 : 6;
+            var perc   = Math.min((m.points / target) * 100, 100);
+            var done   = m.points >= target;
+
+            var rankHtml = '<span class="font-bold text-slate-400">#' + (i+1) + '</span>';
+            if (i === 0) rankHtml = '<i data-lucide="trophy" class="text-yellow-500 mx-auto w-5 h-5"></i>';
+            else if (i === 1) rankHtml = '<span class="text-slate-400 text-lg font-bold">2</span>';
+            else if (i === 2) rankHtml = '<span class="text-amber-600 text-lg font-bold">3</span>';
+
+            var statusCls = m.status === 'Divisi'
+                ? 'bg-blue-50 text-blue-700 border-blue-100'
+                : 'bg-slate-100 text-slate-600 border-slate-200';
+            var barCls = done ? 'bg-green-500' : 'bg-indigo-500';
+
+            var tr = document.createElement('tr');
+            tr.className = 'border-b border-slate-50 hover:bg-slate-50/80 transition-colors';
+            tr.innerHTML =
+                '<td class="p-4 text-center">' + rankHtml + '</td>' +
+                '<td class="p-4 font-bold text-slate-800">' + m.name + '</td>' +
+                '<td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-md border ' + statusCls + '">' + m.status + '</span></td>' +
+                '<td class="p-4"><div class="flex items-center gap-3">' +
+                    '<div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="h-full rounded-full ' + barCls + '" style="width:' + perc + '%"></div></div>' +
+                    '<span class="text-xs font-bold text-slate-500 whitespace-nowrap w-12 text-right">' + m.points + ' / ' + target + '</span>' +
+                '</div></td>' +
+                '<td class="p-4 text-right"><span class="text-lg font-black text-indigo-700">' + m.points + '</span></td>';
+            body.appendChild(tr);
+        });
+        lucide.createIcons();
+    }
+
+    // ---- RENDER HISTORY ----
+    function renderHistory() {
+        var container = document.getElementById('history-body');
+        var countEl   = document.getElementById('history-count');
+        if (countEl) countEl.innerText = 'Total: ' + logsData.length + ' Presensi';
+        if (!container) return;
+        if (logsData.length === 0) {
+            container.innerHTML =
+                '<div class="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">' +
+                '<i data-lucide="clipboard-list" class="w-12 h-12 mx-auto text-slate-300 mb-4"></i>' +
+                '<h3 class="text-lg font-bold text-slate-700">Belum Ada Riwayat</h3>' +
+                '<p class="text-slate-500 mt-1 text-sm">Data presensi yang dicatat akan muncul di sini.</p></div>';
+            lucide.createIcons();
+            return;
+        }
+        container.innerHTML = '';
+        logsData.forEach(function(log) {
+            var div = document.createElement('div');
+            div.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:shadow-md hover:border-indigo-100 transition-all gap-4';
+            div.innerHTML =
+                '<div class="flex items-center gap-4">' +
+                    '<div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100 flex-shrink-0">' +
+                        '<i data-lucide="check-circle" class="w-6 h-6"></i></div>' +
+                    '<div><h4 class="font-bold text-slate-800">' + log.memberName + '</h4>' +
+                    '<p class="text-sm font-medium text-indigo-600 mt-0.5">' + log.activityName + '</p>' +
+                    '<p class="text-xs text-slate-400 mt-1">' + log.date + ' • ' + log.time + '</p></div></div>' +
+                '<div class="flex items-center gap-2">' +
+                    '<div class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-md text-sm border border-indigo-100">+' + log.pointsAdded + ' Poin</div></div>';
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
+
+    // ---- PROCESS SCAN ----
+    function processScan() {
+        if (isProcessing) return;
+        var activityId = document.getElementById('activity-select').value;
+        var memberId   = document.getElementById('member-select').value;
+        if (!activityId || !memberId) {
+            showNotif('error', 'Pilih kegiatan dan identitas member terlebih dahulu!');
+            return;
+        }
+
+        isProcessing = true;
+        var btn = document.getElementById('btn-submit');
+        document.getElementById('icon-submit-idle').classList.add('hidden');
+        document.getElementById('icon-submit-loading').classList.remove('hidden');
+        document.getElementById('text-submit').innerText = 'Menyimpan...';
+        btn.disabled = true;
+        btn.className = 'w-full py-4 font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-slate-200 text-slate-400 cursor-not-allowed';
+
+        var activity = ACTIVITIES.find(function(a) { return a.id === activityId; });
+        var member   = membersData.find(function(m) { return m.id === memberId; });
+
+        if (!activity || !member) {
+            showNotif('error', 'Data tidak ditemukan. Coba refresh halaman.');
+            resetBtn();
+            return;
+        }
+
+        // Coba simpan via Firebase, fallback ke lokal
+        doSave(member, activity);
+    }
+
+    function doSave(member, activity) {
+        var now = new Date();
+        var log = {
+            timestamp:    Date.now(),
+            time:         now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            date:         now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            memberName:   member.name,
+            activityName: activity.name,
+            pointsAdded:  activity.points
+        };
+
+        if (firebaseReady && window._fbSave) {
+            window._fbSave(member, activity, log)
+                .then(function() {
+                    showNotif('success', 'Berhasil! ' + member.name + ' mendapat +' + activity.points + ' Poin.');
+                    document.getElementById('member-select').value = '';
+                    resetBtn();
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    // Fallback ke lokal
+                    saveLocal(member, activity, log);
+                });
+        } else {
+            saveLocal(member, activity, log);
+        }
+    }
+
+    function saveLocal(member, activity, log) {
+        // Update poin member di lokal
+        member.points = (member.points || 0) + activity.points;
+        // Tambah log
+        logsData.unshift(log);
+        // Simpan ke localStorage sebagai backup
+        try {
+            localStorage.setItem('monev_members', JSON.stringify(membersData));
+            localStorage.setItem('monev_logs',    JSON.stringify(logsData));
+        } catch(e) {}
+        renderMembers();
+        renderLeaderboard();
+        renderHistory();
+        showNotif('success', '(Lokal) ' + member.name + ' mendapat +' + activity.points + ' Poin.');
+        document.getElementById('member-select').value = '';
+        resetBtn();
+    }
+
+    function resetBtn() {
+        isProcessing = false;
+        var btn = document.getElementById('btn-submit');
+        document.getElementById('icon-submit-idle').classList.remove('hidden');
+        document.getElementById('icon-submit-loading').classList.add('hidden');
+        document.getElementById('text-submit').innerText = 'Simpan Presensi';
+        btn.disabled = false;
+        btn.className = 'w-full py-4 font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-[0.98]';
+    }
+
+    // ---- CSV PARSE ----
+    function parseCSVLine(line, sep) {
+        var result = [], current = '', inQ = false;
+        for (var i = 0; i < line.length; i++) {
+            var ch = line[i];
+            if (ch === '"') {
+                if (inQ && line[i+1] === '"') { current += '"'; i++; }
+                else { inQ = !inQ; }
+            } else if (ch === sep && !inQ) {
+                result.push(current.trim()); current = '';
+            } else {
+                current += ch;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
+
+    function handleCSVImport() {
+        var file = document.getElementById('csv-file').files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var text    = e.target.result.replace(/\r/g, '');
+            var rawRows = text.split('\n').filter(function(r) { return r.trim(); });
+            if (rawRows.length < 2) { alert('File CSV kosong atau tidak valid.'); return; }
+
+            var sep = rawRows[1].includes(';') ? ';' : ',';
+            var headerIdx = 0, headers = [];
+            for (var i = 0; i < Math.min(5, rawRows.length); i++) {
+                var tmp = parseCSVLine(rawRows[i], sep);
+                if (tmp.some(function(h) { return h.toLowerCase().includes('nama'); })) {
+                    headerIdx = i; headers = tmp; break;
+                }
+            }
+            if (!headers.length) { alert("Kolom 'Nama' tidak ditemukan."); return; }
+
+            var nameIdx     = headers.findIndex(function(h) { return h.toLowerCase().includes('nama'); });
+            var homebaseIdx = headers.findIndex(function(h) { return h.toLowerCase().includes('homebase'); });
+            var posisiIdx   = headers.findIndex(function(h) { return h.toLowerCase().includes('posisi'); });
+            var noIdx       = headers.findIndex(function(h) { return h.toLowerCase() === 'no.' || h.toLowerCase() === 'no' || h.toLowerCase().includes('column'); });
+
+            var btn = document.getElementById('btn-import');
+            btn.innerText = 'Mengunggah...';
+            btn.disabled = true;
+
+            var newMembers = [];
+            for (var r = headerIdx + 1; r < rawRows.length; r++) {
+                var vals = parseCSVLine(rawRows[r], sep);
+                var name = vals[nameIdx];
+                if (!name) continue;
+                var memberId = 'M' + String(r).padStart(3, '0');
+                if (noIdx !== -1 && vals[noIdx]) memberId = vals[noIdx];
+                var pos = posisiIdx !== -1   ? (vals[posisiIdx]   || '').toLowerCase() : '';
+                var hb  = homebaseIdx !== -1 ? (vals[homebaseIdx] || '').toLowerCase() : '';
+                var isDivisi = !(hb === 'non-divisi' || pos === 'non-divisi' || (hb === '-' && pos === 'member'));
+                var meta = {};
+                headers.forEach(function(h, idx) { meta[h] = vals[idx]; });
+                newMembers.push({ id: memberId, name: name, status: isDivisi ? 'Divisi' : 'Non-Divisi', points: 0, metadata: meta });
+            }
+
+            if (firebaseReady && window._fbImport) {
+                window._fbImport(newMembers).then(function(count) {
+                    alert('Selesai! ' + count + ' anggota berhasil masuk ke Cloud.');
+                    btn.innerText = 'Upload Selesai';
+                    switchTab('leaderboard');
+                }).catch(function() {
+                    importLocal(newMembers, btn);
+                });
+            } else {
+                importLocal(newMembers, btn);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function importLocal(newMembers, btn) {
+        membersData = newMembers;
+        try { localStorage.setItem('monev_members', JSON.stringify(membersData)); } catch(e) {}
+        renderMembers();
+        renderLeaderboard();
+        alert('(Lokal) ' + newMembers.length + ' anggota berhasil diimpor.');
+        if (btn) btn.innerText = 'Import Selesai';
+        switchTab('leaderboard');
+    }
+
+    function clearAllData() {
+        var c1 = confirm('PERINGATAN: Hapus SEMUA DATA ANGGOTA DAN RIWAYAT?');
+        if (!c1) return;
+        var c2 = prompt('Ketik "HAPUS" untuk melanjutkan:');
+        if (c2 !== 'HAPUS') { alert('Dibatalkan.'); return; }
+
+        var btn = document.getElementById('btn-clear');
+        btn.innerText = 'Menghapus...';
+        btn.disabled = true;
+
+        var done = function() {
+            membersData = [];
+            logsData    = [];
+            try { localStorage.removeItem('monev_members'); localStorage.removeItem('monev_logs'); } catch(e) {}
+            renderMembers();
+            renderLeaderboard();
+            renderHistory();
+            alert('Semua data berhasil dihapus.');
+            btn.innerText = 'Hapus Semua Data Sekarang';
+            btn.disabled = false;
+        };
+
+        if (firebaseReady && window._fbClear) {
+            window._fbClear().then(done).catch(function() { done(); });
+        } else {
+            done();
+        }
+    }
+
+    // ---- LOAD LOCAL FALLBACK ----
+    function loadLocalData() {
+        try {
+            var lm = localStorage.getItem('monev_members');
+            var ll = localStorage.getItem('monev_logs');
+            if (lm) membersData = JSON.parse(lm);
+            if (ll) logsData    = JSON.parse(ll).sort(function(a,b){ return b.timestamp - a.timestamp; });
+        } catch(e) {}
+        renderMembers();
+        renderLeaderboard();
+        renderHistory();
+    }
+
+    // ---- INIT UI ----
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+
+        // Populate kegiatan
+        var actSel = document.getElementById('activity-select');
+        ACTIVITIES.forEach(function(a) {
+            var opt = document.createElement('option');
+            opt.value = a.id;
+            opt.textContent = a.name + ' (+' + a.points + ' Poin)';
+            actSel.appendChild(opt);
+        });
+
+        // Tab buttons
+        ALL_TABS.forEach(function(t) {
+            var btn = document.getElementById('tab-' + t);
+            if (btn) btn.addEventListener('click', function() { switchTab(t); });
+        });
+
+        // Scanner mode buttons
+        document.getElementById('btn-mode-kamera').addEventListener('click',   function() { setScannerMode('kamera'); });
+        document.getElementById('btn-mode-simulasi').addEventListener('click', function() { setScannerMode('simulasi'); });
+
+        // Submit
+        document.getElementById('btn-submit').addEventListener('click', processScan);
+
+        // CSV pick & import
+        document.getElementById('btn-pick-csv').addEventListener('click', function() {
+            document.getElementById('csv-file').click();
+        });
+        document.getElementById('csv-file').addEventListener('change', function(e) {
+            var f = e.target.files[0];
+            if (f) {
+                document.getElementById('file-name-display').innerText = 'File: ' + f.name;
+                var btn = document.getElementById('btn-import');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+        document.getElementById('btn-import').addEventListener('click', handleCSVImport);
+        document.getElementById('btn-clear').addEventListener('click', clearAllData);
+
+        // Tambahkan CSS tab
+        var style = document.createElement('style');
+        style.textContent =
+            '.active-tab   { background:#eef2ff; color:#4338ca; box-shadow:0 1px 3px rgba(0,0,0,.08); border:1px solid #c7d2fe; }' +
+            '.inactive-tab { color:#64748b; border:1px solid transparent; }' +
+            '.inactive-tab:hover { background:#f8fafc; color:#334155; }';
+        document.head.appendChild(style);
+
+        // Load local data dulu sambil tunggu Firebase
+        loadLocalData();
+    });
+</script>
+
+<!-- =============================================
+     SCRIPT 2: FIREBASE LOGIC (Module scope)
+     ============================================= -->
+<script type="module">
+    import { initializeApp }                           from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, addDoc, getDocs, deleteDoc }
+        from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey:            "AIzaSyC1vuIoVw7ZOUyd9gD7MRcQwiy7-sqLaAE",
+        authDomain:        "monev-rijal-ynbdg.firebaseapp.com",
+        projectId:         "monev-rijal-ynbdg",
+        storageBucket:     "monev-rijal-ynbdg.firebasestorage.app",
+        messagingSenderId: "805465667448",
+        appId:             "1:805465667448:web:c8ef9258aae0d8c0cffa8d"
+    };
+    const APP_ID = "produksi-rijal-ynbdg";
+
+    let app, auth, db;
+    try {
+        app  = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db   = getFirestore(app);
+    } catch(e) {
+        console.error("Firebase init gagal:", e);
+        updateCloudStatus('error');
+    }
+
+    if (!auth) { updateCloudStatus('error'); }
+    else {
+        // Timeout 8 detik jika tidak berhasil connect
+        var timeout = setTimeout(function() {
+            if (!firebaseReady) {
+                updateCloudStatus('error');
+                console.warn("Firebase auth timeout — mode lokal aktif.");
+            }
+        }, 8000);
+
+        signInAnonymously(auth).catch(function(err) {
+            console.error("signInAnonymously gagal:", err.code, err.message);
+            updateCloudStatus('error');
+            clearTimeout(timeout);
+        });
+
+        onAuthStateChanged(auth, function(user) {
+            if (user) {
+                clearTimeout(timeout);
+                firebaseReady = true;
+                updateCloudStatus('connected');
+
+                // Listen members
+                const membersRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'members');
+                onSnapshot(membersRef, function(snap) {
+                    membersData = snap.docs.map(function(d) { return d.data(); });
+                    renderMembers();
+                    renderLeaderboard();
+                }, function(err) { console.error(err); });
+
+                // Listen logs
+                const logsRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'logs');
+                onSnapshot(logsRef, function(snap) {
+                    logsData = snap.docs.map(function(d){ return d.data(); })
+                                       .sort(function(a,b){ return b.timestamp - a.timestamp; });
+                    renderHistory();
+                }, function(err) { console.error(err); });
+
+            } else {
+                firebaseReady = false;
+                updateCloudStatus('error');
+            }
+        });
+    }
+
+    // Expose Firebase operations to global UI script
+    window._fbSave = async function(member, activity, log) {
+        const memberRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'members', member.id);
+        await updateDoc(memberRef, { points: member.points + activity.points });
+        const logsRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'logs');
+        await addDoc(logsRef, log);
+    };
+
+    window._fbImport = async function(newMembers) {
+        let count = 0;
+        for (const m of newMembers) {
+            await setDoc(doc(db, 'artifacts', APP_ID, 'public', 'data', 'members', m.id), m);
+            count++;
+        }
+        return count;
+    };
+
+    window._fbClear = async function() {
+        const mSnap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'members'));
+        await Promise.all(mSnap.docs.map(d => deleteDoc(d.ref)));
+        const lSnap = await getDocs(collection(db, 'artifacts', APP_ID, 'public', 'data', 'logs'));
+        await Promise.all(lSnap.docs.map(d => deleteDoc(d.ref)));
+    };
+</script>
+</body>
+</html>
